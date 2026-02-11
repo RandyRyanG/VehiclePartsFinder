@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manufacturer Lookup</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --border: #2a2d35;
+    --accent: #e8c84a;
+    --accent-dim: rgba(232,200,74,0.12);
+    --text: #e2e4e9;
+    --muted: #5a5f6e;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px);
+  }
+
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2.5rem;
+    position: relative;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+
+  .label-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    padding: 2px 6px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    font-weight: 300;
+  }
+
+  .field-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.85rem 2.5rem 0.85rem 1rem;
+    outline: none;
+    transition: border-color 0.15s;
+    letter-spacing: 0.01em;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  .clear-btn {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0;
+    display: none;
+    transition: color 0.15s;
+  }
+
+  .clear-btn:hover { color: var(--accent); }
+
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0; right: 0;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-top: none;
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+  }
+
+  .dropdown::-webkit-scrollbar { width: 4px; }
+  .dropdown::-webkit-scrollbar-track { background: var(--bg); }
+  .dropdown::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .dropdown-item {
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  .dropdown-item:last-child { border-bottom: none; }
+
+  .dropdown-item:hover,
+  .dropdown-item.active {
+    background: var(--accent-dim);
+  }
+
+  .item-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .item-name mark {
+    background: none;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .item-id {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .no-results {
+    padding: 1rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .result-box {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: none;
+  }
+
+  .result-box.visible { display: block; }
+
+  .result-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .result-item { display: flex; flex-direction: column; gap: 2px; }
+
+  .result-key {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .result-val {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .result-val.accent { color: var(--accent); }
+
+  .submit-btn {
+    margin-top: 1.5rem;
+    width: 100%;
+    background: var(--accent);
+    color: #0e0f11;
+    border: none;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.9rem;
+    cursor: pointer;
+    font-weight: 700;
+    transition: opacity 0.15s;
+    display: none;
+  }
+
+  .submit-btn:hover { opacity: 0.85; }
+  .submit-btn.visible { display: block; }
+
+  .count-badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 0.4rem;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="label-row">
+    <span class="tag">n8n trigger</span>
+    <span class="tag">v1.0</span>
+  </div>
+  <h1>Manufacturer Lookup</h1>
+  <p class="subtitle">Begin typing to search across 1100+ manufacturers</p>
+
+  <label class="field-label" for="mfr-input">manufacturer name</label>
+  <div class="input-wrap">
+    <input
+      type="text"
+      id="mfr-input"
+      placeholder="e.g. Toyota, BMW, John Deere..."
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button class="clear-btn" id="clear-btn" title="Clear">✕</button>
+    <div class="dropdown" id="dropdown"></div>
+  </div>
+  <div class="count-badge" id="count-badge"></div>
+
+  <div class="result-box" id="result-box">
+    <div class="result-label">selected manufacturer</div>
+    <div class="result-grid">
+      <div class="result-item">
+        <span class="result-key">name</span>
+        <span class="result-val" id="res-name">—</span>
+      </div>
+      <div class="result-item">
+        <span class="result-key">manufacturer id</span>
+        <span class="result-val accent" id="res-id">—</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="submit-btn" id="submit-btn">
+    ▶ &nbsp; Trigger Workflow
+  </button>
+</div>
+
+<script>
+const manufacturers = [
+  {"manufacturerId":8232,"manufacturerName":"212"},{"manufacturerId":3854,"manufacturerName":"ABARTH"},{"manufacturerId":609,"manufacturerName":"AC"},{"manufacturerId":1505,"manufacturerName":"ACURA"},{"manufacturerId":4593,"manufacturerName":"ACURA (GAC)"},{"manufacturerId":6883,"manufacturerName":"ADDAX"},{"manufacturerId":5487,"manufacturerName":"AEOLUS"},{"manufacturerId":128,"manufacturerName":"AGRALE"},{"manufacturerId":6465,"manufacturerName":"AITO"},{"manufacturerId":5500,"manufacturerName":"AIWAYS"},{"manufacturerId":1480,"manufacturerName":"AIXAM"},{"manufacturerId":2,"manufacturerName":"ALFA ROMEO"},{"manufacturerId":4414,"manufacturerName":"ALPHEON"},{"manufacturerId":866,"manufacturerName":"ALPINA"},{"manufacturerId":810,"manufacturerName":"ALPINE"},{"manufacturerId":4730,"manufacturerName":"ALVIS"},{"manufacturerId":2775,"manufacturerName":"AM GENERAL"},{"manufacturerId":2246,"manufacturerName":"AMC"},{"manufacturerId":3526,"manufacturerName":"ANADOL"},{"manufacturerId":2847,"manufacturerName":"ANCHI"},{"manufacturerId":3971,"manufacturerName":"ANDORIA"},{"manufacturerId":2848,"manufacturerName":"ANFINI"},{"manufacturerId":5479,"manufacturerName":"ANKAI"},{"manufacturerId":5136,"manufacturerName":"APOLLO"},{"manufacturerId":5891,"manufacturerName":"ARCFOX"},{"manufacturerId":4406,"manufacturerName":"ARIEL"},{"manufacturerId":2526,"manufacturerName":"ARMSTRONG SIDDELEY"},{"manufacturerId":1360,"manufacturerName":"ARO"},{"manufacturerId":8126,"manufacturerName":"ARROW MOBILITY"},{"manufacturerId":3495,"manufacturerName":"ARTEGA"},{"manufacturerId":2241,"manufacturerName":"ASHOK LEYLAND"},{"manufacturerId":6579,"manufacturerName":"ASIA CAB"},{"manufacturerId":879,"manufacturerName":"ASIA MOTORS"},{"manufacturerId":2242,"manufacturerName":"ASKAM"},{"manufacturerId":881,"manufacturerName":"ASTON MARTIN"},{"manufacturerId":2706,"manufacturerName":"ASÜNA"},{"manufacturerId":5414,"manufacturerName":"ATUL"},{"manufacturerId":5,"manufacturerName":"AUDI"},{"manufacturerId":2858,"manufacturerName":"AUDI (FAW)"},{"manufacturerId":6400,"manufacturerName":"AUDI (SAIC)"},{"manufacturerId":6,"manufacturerName":"AUSTIN"},{"manufacturerId":1538,"manufacturerName":"AUSTIN-HEALEY"},{"manufacturerId":3,"manufacturerName":"AUTO UNION"},{"manufacturerId":4600,"manufacturerName":"AUTOAR"},{"manufacturerId":799,"manufacturerName":"AUTOBIANCHI"},{"manufacturerId":5186,"manufacturerName":"AUTORRAD"},{"manufacturerId":3842,"manufacturerName":"AUTOZAM"},{"manufacturerId":2845,"manufacturerName":"AUVERLAND"},{"manufacturerId":2707,"manufacturerName":"AVANTI"},{"manufacturerId":6622,"manufacturerName":"AVATR"},{"manufacturerId":132,"manufacturerName":"AVIA"},{"manufacturerId":6695,"manufacturerName":"B-ON"},{"manufacturerId":8047,"manufacturerName":"BAC"},{"manufacturerId":4626,"manufacturerName":"BAHMAN"},{"manufacturerId":3773,"manufacturerName":"BAIC"},{"manufacturerId":4418,"manufacturerName":"BAIC BJEV"},{"manufacturerId":4036,"manufacturerName":"BAIC HUANSU"},{"manufacturerId":5116,"manufacturerName":"BAIC RUILI"},{"manufacturerId":6302,"manufacturerName":"BAIC RUIXIANG"},{"manufacturerId":4266,"manufacturerName":"BAIC WEIWANG"},{"manufacturerId":5671,"manufacturerName":"BAIC-ORV"},{"manufacturerId":6381,"manufacturerName":"BAIZHI"},{"manufacturerId":4552,"manufacturerName":"BAJAJ"},{"manufacturerId":5747,"manufacturerName":"BAJAJ RE"},{"manufacturerId":2849,"manufacturerName":"BAJAJ TEMPO"},{"manufacturerId":6861,"manufacturerName":"BAK AUTOMOBILE"},{"manufacturerId":3764,"manufacturerName":"BAOJUN (SGMW)"},{"manufacturerId":2906,"manufacturerName":"BAOLONG"},{"manufacturerId":134,"manufacturerName":"BARKAS"},{"manufacturerId":3071,"manufacturerName":"BAW"},{"manufacturerId":5415,"manufacturerName":"BAXY"},{"manufacturerId":10,"manufacturerName":"BEDFORD"},{"manufacturerId":5670,"manufacturerName":"BEIJING"},{"manufacturerId":815,"manufacturerName":"BENTLEY"},{"manufacturerId":1485,"manufacturerName":"BERTONE"},{"manufacturerId":5510,"manufacturerName":"BESTUNE"},{"manufacturerId":3762,"manufacturerName":"BESTURN (FAW)"},{"manufacturerId":4645,"manufacturerName":"BIO AUTO"},{"manufacturerId":4637,"manufacturerName":"BISU"},{"manufacturerId":1486,"manufacturerName":"BITTER"},{"manufacturerId":5738,"manufacturerName":"BIZZARRINI"},{"manufacturerId":4712,"manufacturerName":"BLUECAR"},{"manufacturerId":2243,"manufacturerName":"BMC"},{"manufacturerId":16,"manufacturerName":"BMW"},{"manufacturerId":3124,"manufacturerName":"BMW (BRILLIANCE)"},{"manufacturerId":4439,"manufacturerName":"BOGDAN"},{"manufacturerId":5173,"manufacturerName":"BOLWELL"},{"manufacturerId":1537,"manufacturerName":"BOND"},{"manufacturerId":136,"manufacturerName":"BORGWARD"},{"manufacturerId":4161,"manufacturerName":"BRABUS"},{"manufacturerId":2749,"manufacturerName":"BREMACH"},{"manufacturerId":2708,"manufacturerName":"BRICKLIN"},{"manufacturerId":6898,"manufacturerName":"BRIGHTDROP"},{"manufacturerId":3076,"manufacturerName":"BRILLIANCE"},{"manufacturerId":6541,"manufacturerName":"BRILLIANCE XINRI"},{"manufacturerId":1487,"manufacturerName":"BRISTOL"},{"manufacturerId":4162,"manufacturerName":"BUFORI"},{"manufacturerId":788,"manufacturerName":"BUGATTI"},{"manufacturerId":816,"manufacturerName":"BUICK"},{"manufacturerId":3136,"manufacturerName":"BUICK (SGM)"},{"manufacturerId":3122,"manufacturerName":"BYD"},{"manufacturerId":3770,"manufacturerName":"C.A.M"},{"manufacturerId":819,"manufacturerName":"CADILLAC"},{"manufacturerId":3528,"manufacturerName":"CADILLAC (SGM)"},{"manufacturerId":1488,"manufacturerName":"CALLAWAY"},{"manufacturerId":1489,"manufacturerName":"CARBODIES"},{"manufacturerId":3194,"manufacturerName":"CARLARKY"},{"manufacturerId":2915,"manufacturerName":"CASALINI"},{"manufacturerId":1490,"manufacturerName":"CATERHAM"},{"manufacturerId":1049,"manufacturerName":"CBT"},{"manufacturerId":5769,"manufacturerName":"CENNTRO"},{"manufacturerId":3678,"manufacturerName":"CHAMONIX"},{"manufacturerId":4609,"manufacturerName":"CHANA"},{"manufacturerId":2852,"manufacturerName":"CHANGAN"},{"manufacturerId":2889,"manufacturerName":"CHANGFENG"},{"manufacturerId":2853,"manufacturerName":"CHANGHE"},{"manufacturerId":2916,"manufacturerName":"CHATENET"},{"manufacturerId":1491,"manufacturerName":"CHECKER"},{"manufacturerId":7097,"manufacturerName":"CHENGSHI"},{"manufacturerId":2887,"manufacturerName":"CHERY"},{"manufacturerId":8233,"manufacturerName":"CHEVOO"},{"manufacturerId":138,"manufacturerName":"CHEVROLET"},{"manufacturerId":3527,"manufacturerName":"CHEVROLET (SGM)"},{"manufacturerId":3651,"manufacturerName":"CHEVROLET (SGMW)"},{"manufacturerId":8231,"manufacturerName":"CHIREY"},{"manufacturerId":20,"manufacturerName":"CHRYSLER"},{"manufacturerId":3646,"manufacturerName":"CHRYSLER (BBDC)"},{"manufacturerId":5521,"manufacturerName":"CHRYSLER (SOUEAST)"},{"manufacturerId":4177,"manufacturerName":"CHTC AUTO"},{"manufacturerId":5596,"manufacturerName":"CIIMO"},{"manufacturerId":21,"manufacturerName":"CITROËN"},{"manufacturerId":2891,"manufacturerName":"CITROËN (DF-PSA)"},{"manufacturerId":3772,"manufacturerName":"CMC"},{"manufacturerId":5338,"manufacturerName":"CNJ"},{"manufacturerId":3719,"manufacturerName":"CODA"},{"manufacturerId":5482,"manufacturerName":"COMARTH"},{"manufacturerId":7268,"manufacturerName":"CORADIR"},{"manufacturerId":4214,"manufacturerName":"COWIN"},{"manufacturerId":8128,"manufacturerName":"CROSS LANDER"},{"manufacturerId":4896,"manufacturerName":"CUPRA"},{"manufacturerId":139,"manufacturerName":"DACIA"},{"manufacturerId":2901,"manufacturerName":"DADI"},{"manufacturerId":185,"manufacturerName":"DAEWOO"},{"manufacturerId":24,"manufacturerName":"DAF"},{"manufacturerId":25,"manufacturerName":"DAIHATSU"},{"manufacturerId":3274,"manufacturerName":"DAIHATSU (FAW)"},{"manufacturerId":26,"manufacturerName":"DAIMLER"},{"manufacturerId":1493,"manufacturerName":"DALLAS"},{"manufacturerId":807,"manufacturerName":"DATSUN"},{"manufacturerId":4267,"manufacturerName":"DAYUN"},{"manufacturerId":4717,"manufacturerName":"DE LA CHAPELLE"},{"manufacturerId":1494,"manufacturerName":"DE LOREAN"},{"manufacturerId":1495,"manufacturerName":"DE TOMASO"},{"manufacturerId":5140,"manufacturerName":"DEARCC"},{"manufacturerId":6587,"manufacturerName":"DEEPAL"},{"manufacturerId":4089,"manufacturerName":"DENZA"},{"manufacturerId":3069,"manufacturerName":"DERWAYS"},{"manufacturerId":2784,"manufacturerName":"DESOTO"},{"manufacturerId":4269,"manufacturerName":"DFSK"},{"manufacturerId":29,"manufacturerName":"DODGE"},{"manufacturerId":5507,"manufacturerName":"DODGE (SOUEAST)"},{"manufacturerId":7738,"manufacturerName":"DONGBEN"},{"manufacturerId":3659,"manufacturerName":"DONGFENG"},{"manufacturerId":2854,"manufacturerName":"DONGFENG (DFAC)"},{"manufacturerId":4264,"manufacturerName":"DONGFENG FENGDU"},{"manufacturerId":5767,"manufacturerName":"DONGFENG FUKANG"},{"manufacturerId":3152,"manufacturerName":"DONGFENG XIAOKANG"},{"manufacturerId":4658,"manufacturerName":"DONKERVOORT"},{"manufacturerId":5141,"manufacturerName":"DORCEN"},{"manufacturerId":3497,"manufacturerName":"DR"},{"manufacturerId":4468,"manufacturerName":"DS"},{"manufacturerId":3999,"manufacturerName":"DS (CAPSA)"},{"manufacturerId":8300,"manufacturerName":"DSK"},{"manufacturerId":5705,"manufacturerName":"E.GO"},{"manufacturerId":824,"manufacturerName":"EAGLE"},{"manufacturerId":142,"manufacturerName":"EBRO"},{"manufacturerId":3652,"manufacturerName":"EFFA"},{"manufacturerId":3618,"manufacturerName":"EFFEDI"},{"manufacturerId":6177,"manufacturerName":"ELARIS"},{"manufacturerId":8264,"manufacturerName":"ELFIN"},{"manufacturerId":7024,"manufacturerName":"EMC"},{"manufacturerId":3332,"manufacturerName":"EMGRAND"},{"manufacturerId":6758,"manufacturerName":"EMW"},{"manufacturerId":4541,"manufacturerName":"ENGESA"},{"manufacturerId":3704,"manufacturerName":"ENGLON"},{"manufacturerId":5248,"manufacturerName":"ENOVATE"},{"manufacturerId":4259,"manufacturerName":"ENRANGER"},{"manufacturerId":1503,"manufacturerName":"ENVEMO"},{"manufacturerId":8322,"manufacturerName":"EON MOTORS"},{"manufacturerId":6140,"manufacturerName":"ESEMKA"},{"manufacturerId":2857,"manufacturerName":"EUNOS"},{"manufacturerId":3267,"manufacturerName":"EUROPESTAR"},{"manufacturerId":6288,"manufacturerName":"EV HOUSE"},{"manufacturerId":5522,"manufacturerName":"EVERUS"},{"manufacturerId":6862,"manufacturerName":"EVO"},{"manufacturerId":6772,"manufacturerName":"EVUM MOTORS"},{"manufacturerId":2709,"manufacturerName":"EXCALIBUR"},{"manufacturerId":5247,"manufacturerName":"EXEED (CHERY)"},{"manufacturerId":7789,"manufacturerName":"eπ"},{"manufacturerId":5190,"manufacturerName":"FAC"},{"manufacturerId":7507,"manufacturerName":"FANGCHENGBAO"},{"manufacturerId":6089,"manufacturerName":"FARGO"},{"manufacturerId":6000,"manufacturerName":"FARIZON AUTO"},{"manufacturerId":3610,"manufacturerName":"FAW"},{"manufacturerId":5808,"manufacturerName":"FAW (HONGTA)"},{"manufacturerId":2909,"manufacturerName":"FAW (JILIN)"},{"manufacturerId":2890,"manufacturerName":"FAW (TIANJIN)"},{"manufacturerId":6276,"manufacturerName":"FEIDI"},{"manufacturerId":5486,"manufacturerName":"FENGON"},{"manufacturerId":2862,"manufacturerName":"FENGSHEN"},{"manufacturerId":2863,"manufacturerName":"FENGXING"},{"manufacturerId":700,"manufacturerName":"FERRARI"},{"manufacturerId":7110,"manufacturerName":"FEST"},{"manufacturerId":35,"manufacturerName":"FIAT"},{"manufacturerId":3761,"manufacturerName":"FIAT (GAC)"},{"manufacturerId":3131,"manufacturerName":"FIAT (NANJING)"},{"manufacturerId":3738,"manufacturerName":"FISKER"},{"manufacturerId":3771,"manufacturerName":"FODAY"},{"manufacturerId":6121,"manufacturerName":"FOMM"},{"manufacturerId":2850,"manufacturerName":"FORCE"},{"manufacturerId":36,"manufacturerName":"FORD"},{"manufacturerId":3125,"manufacturerName":"FORD (CHANGAN)"},{"manufacturerId":3656,"manufacturerName":"FORD (JMC)"},{"manufacturerId":5998,"manufacturerName":"FORD AFRICA"},{"manufacturerId":2864,"manufacturerName":"FORD ASIA & OCEANIA"},{"manufacturerId":1496,"manufacturerName":"FORD AUSTRALIA"},{"manufacturerId":808,"manufacturerName":"FORD OTOSAN"},{"manufacturerId":776,"manufacturerName":"FORD USA"},{"manufacturerId":4189,"manufacturerName":"FORLAND"},{"manufacturerId":6363,"manufacturerName":"FORTHING"},{"manufacturerId":2867,"manufacturerName":"FOTON"},{"manufacturerId":5598,"manufacturerName":"FOTON GRATOUR"},{"manufacturerId":3297,"manufacturerName":"FPV"},{"manufacturerId":4257,"manufacturerName":"FQT MOTOR"},{"manufacturerId":147,"manufacturerName":"FREIGHTLINER"},{"manufacturerId":775,"manufacturerName":"FSO"},{"manufacturerId":2875,"manufacturerName":"FUQI"},{"manufacturerId":3196,"manufacturerName":"GAC"},{"manufacturerId":5745,"manufacturerName":"GAC NE"},{"manufacturerId":6856,"manufacturerName":"GALAXY"},{"manufacturerId":5475,"manufacturerName":"GALLOPER"},{"manufacturerId":148,"manufacturerName":"GAZ"},{"manufacturerId":2590,"manufacturerName":"GEELY"},{"manufacturerId":4473,"manufacturerName":"GENESIS"},{"manufacturerId":831,"manufacturerName":"GEO"},{"manufacturerId":5244,"manufacturerName":"GEOMETRY"},{"manufacturerId":4657,"manufacturerName":"GERMAN E CARS"},{"manufacturerId":1498,"manufacturerName":"GINETTA"},{"manufacturerId":5209,"manufacturerName":"GIOTTI VICTORIA"},{"manufacturerId":812,"manufacturerName":"GLAS"},{"manufacturerId":3697,"manufacturerName":"GLEAGLE"},{"manufacturerId":39,"manufacturerName":"GMC"},{"manufacturerId":5208,"manufacturerName":"GME"},{"manufacturerId":3158,"manufacturerName":"GOLDEN DRAGON"},{"manufacturerId":2902,"manufacturerName":"GONOW"},{"manufacturerId":3997,"manufacturerName":"GONOW (GAC)"},{"manufacturerId":4752,"manufacturerName":"GOUPIL"},{"manufacturerId":2903,"manufacturerName":"GREAT WALL"},{"manufacturerId":2926,"manufacturerName":"GRECAV"},{"manufacturerId":4640,"manufacturerName":"GROZ"},{"manufacturerId":5135,"manufacturerName":"GUMPERT"},{"manufacturerId":2249,"manufacturerName":"GURGEL"},{"manufacturerId":2866,"manufacturerName":"HAFEI"},{"manufacturerId":3036,"manufacturerName":"HAIMA (FAW)"},{"manufacturerId":3913,"manufacturerName":"HAIMA (ZHENGZHOU)"},{"manufacturerId":4610,"manufacturerName":"HANTENG"},{"manufacturerId":3968,"manufacturerName":"HAVAL"},{"manufacturerId":3562,"manufacturerName":"HAWTAI"},{"manufacturerId":6725,"manufacturerName":"HDT"},{"manufacturerId":4450,"manufacturerName":"HEIBAO"},{"manufacturerId":8234,"manufacturerName":"HENGCHI"},{"manufacturerId":6208,"manufacturerName":"HENGRUN AUTO"},{"manufacturerId":4268,"manufacturerName":"HENGTONG"},{"manufacturerId":6162,"manufacturerName":"HENREY AUTOMOBILE"},{"manufacturerId":4176,"manufacturerName":"HIGER"},{"manufacturerId":2794,"manufacturerName":"HILLMAN"},{"manufacturerId":1499,"manufacturerName":"HINDUSTAN"},{"manufacturerId":5858,"manufacturerName":"HIPHI"},{"manufacturerId":1500,"manufacturerName":"HOBBYCAR"},{"manufacturerId":801,"manufacturerName":"HOLDEN"},{"manufacturerId":45,"manufacturerName":"HONDA"},{"manufacturerId":3126,"manufacturerName":"HONDA (DONGFENG)"},{"manufacturerId":3129,"manufacturerName":"HONDA (GAC)"},{"manufacturerId":2871,"manufacturerName":"HONGQI"},{"manufacturerId":5109,"manufacturerName":"HORKI (DYK)"},{"manufacturerId":3276,"manufacturerName":"HSV"},{"manufacturerId":6623,"manufacturerName":"HUAKAI AUTO"},{"manufacturerId":2872,"manufacturerName":"HUALI"},{"manufacturerId":4258,"manufacturerName":"HUANGHAI"},{"manufacturerId":4255,"manufacturerName":"HUASONG"},{"manufacturerId":4320,"manufacturerName":"HUAYANG"},{"manufacturerId":6697,"manufacturerName":"HUAZI AUTO"},{"manufacturerId":3155,"manufacturerName":"HUIZHONG"},{"manufacturerId":4729,"manufacturerName":"HUMBER"},{"manufacturerId":1506,"manufacturerName":"HUMMER"},{"manufacturerId":5511,"manufacturerName":"HUNKT"},{"manufacturerId":5583,"manufacturerName":"HYCAN"},{"manufacturerId":6929,"manufacturerName":"HYPER"},{"manufacturerId":183,"manufacturerName":"HYUNDAI"},{"manufacturerId":3123,"manufacturerName":"HYUNDAI (BEIJING)"},{"manufacturerId":3128,"manufacturerName":"HYUNDAI (HUATAI)"},{"manufacturerId":7809,"manufacturerName":"i CAR"},{"manufacturerId":6873,"manufacturerName":"ICKX"},{"manufacturerId":3507,"manufacturerName":"ICML"},{"manufacturerId":4536,"manufacturerName":"IES"},{"manufacturerId":4535,"manufacturerName":"IKA"},{"manufacturerId":6514,"manufacturerName":"IM MOTORS"},{"manufacturerId":1507,"manufacturerName":"INDIGO"},{"manufacturerId":6576,"manufacturerName":"INEOS"},{"manufacturerId":1526,"manufacturerName":"INFINITI"},{"manufacturerId":4211,"manufacturerName":"INFINITI (DFAC)"},{"manufacturerId":52,"manufacturerName":"INNOCENTI"},{"manufacturerId":3677,"manufacturerName":"INOKOM"},{"manufacturerId":2460,"manufacturerName":"INTERNATIONAL"},{"manufacturerId":3084,"manufacturerName":"IRAN KHODRO"},{"manufacturerId":1508,"manufacturerName":"IRMSCHER"},{"manufacturerId":1509,"manufacturerName":"ISDERA"},{"manufacturerId":5737,"manufacturerName":"ISO"},{"manufacturerId":5736,"manufacturerName":"ISORIVOLTA"},{"manufacturerId":2798,"manufacturerName":"ISOTTA FRASCHINI"},{"manufacturerId":54,"manufacturerName":"ISUZU"},{"manufacturerId":4393,"manufacturerName":"ISUZU (JIANGXI)"},{"manufacturerId":3139,"manufacturerName":"ISUZU (QINGLING)"},{"manufacturerId":55,"manufacturerName":"IVECO"},{"manufacturerId":4683,"manufacturerName":"IZH"},{"manufacturerId":2873,"manufacturerName":"JAC"},{"manufacturerId":6903,"manufacturerName":"JAC EV"},{"manufacturerId":8059,"manufacturerName":"JAECOO"},{"manufacturerId":56,"manufacturerName":"JAGUAR"},{"manufacturerId":4614,"manufacturerName":"JAGUAR (CHERY)"},{"manufacturerId":5599,"manufacturerName":"JDMC"},{"manufacturerId":882,"manufacturerName":"JEEP"},{"manufacturerId":2851,"manufacturerName":"JEEP (BJC)"},{"manufacturerId":4454,"manufacturerName":"JEEP (GAC FCA)"},{"manufacturerId":7096,"manufacturerName":"JENHOO-AUTO"},{"manufacturerId":1511,"manufacturerName":"JENSEN"},{"manufacturerId":5119,"manufacturerName":"JETOUR"},{"manufacturerId":5398,"manufacturerName":"JETTA"},{"manufacturerId":2908,"manufacturerName":"JIANGNAN"},{"manufacturerId":6702,"manufacturerName":"JIDU"},{"manufacturerId":3849,"manufacturerName":"JIEFANG (FAW)"},{"manufacturerId":2888,"manufacturerName":"JINBEI"},{"manufacturerId":4179,"manufacturerName":"JINCHENG"},{"manufacturerId":7090,"manufacturerName":"JIYUE AUTO"},{"manufacturerId":3040,"manufacturerName":"JMC"},{"manufacturerId":5219,"manufacturerName":"JMEV"},{"manufacturerId":3993,"manufacturerName":"JONWAY"},{"manufacturerId":5699,"manufacturerName":"JOYFUN AUTO"},{"manufacturerId":4180,"manufacturerName":"JOYLONG"},{"manufacturerId":8113,"manufacturerName":"JPX"},{"manufacturerId":5417,"manufacturerName":"JSA"},{"manufacturerId":6224,"manufacturerName":"KAICENE"},{"manufacturerId":4265,"manufacturerName":"KAMA"},{"manufacturerId":4390,"manufacturerName":"KANDI"},{"manufacturerId":5501,"manufacturerName":"KARMA"},{"manufacturerId":3286,"manufacturerName":"KARRY"},{"manufacturerId":4445,"manufacturerName":"KARSAN"},{"manufacturerId":4181,"manufacturerName":"KAWEI AUTO"},{"manufacturerId":7030,"manufacturerName":"KG MOBILITY"},{"manufacturerId":184,"manufacturerName":"KIA"},{"manufacturerId":3127,"manufacturerName":"KIA (DYK)"},{"manufacturerId":8267,"manufacturerName":"KIM LONG"},{"manufacturerId":3805,"manufacturerName":"KING LONG"},{"manufacturerId":4163,"manufacturerName":"KOENIGSEGG"},{"manufacturerId":2760,"manufacturerName":"KTM"},{"manufacturerId":6933,"manufacturerName":"KYC"},{"manufacturerId":63,"manufacturerName":"LADA"},{"manufacturerId":8127,"manufacturerName":"LAFER"},{"manufacturerId":2710,"manufacturerName":"LAFORZA"},{"manufacturerId":701,"manufacturerName":"LAMBORGHINI"},{"manufacturerId":64,"manufacturerName":"LANCIA"},{"manufacturerId":1820,"manufacturerName":"LAND ROVER"},{"manufacturerId":4282,"manufacturerName":"LAND ROVER (CHERY)"},{"manufacturerId":7577,"manufacturerName":"LANDIAN"},{"manufacturerId":2589,"manufacturerName":"LANDWIND (JMC)"},{"manufacturerId":1380,"manufacturerName":"LDV"},{"manufacturerId":5201,"manufacturerName":"LEAPMOTOR"},{"manufacturerId":5530,"manufacturerName":"LEOPAARD"},{"manufacturerId":5499,"manufacturerName":"LETIN"},{"manufacturerId":5194,"manufacturerName":"LEVC"},{"manufacturerId":842,"manufacturerName":"LEXUS"},{"manufacturerId":2407,"manufacturerName":"LEYLAND-INNOCENTI"},{"manufacturerId":3086,"manufacturerName":"LIFAN"},{"manufacturerId":1513,"manufacturerName":"LIGIER"},{"manufacturerId":1200,"manufacturerName":"LINCOLN"},{"manufacturerId":5512,"manufacturerName":"LINCOLN (CHANGAN)"},{"manufacturerId":5746,"manufacturerName":"LINGBOX"},{"manufacturerId":8263,"manufacturerName":"LINGXI"},{"manufacturerId":5181,"manufacturerName":"LINKTOUR"},{"manufacturerId":6928,"manufacturerName":"LINXYS"},{"manufacturerId":5155,"manufacturerName":"LITE (BJEV)"},{"manufacturerId":6739,"manufacturerName":"LIVAN AUTO"},{"manufacturerId":5246,"manufacturerName":"LIXIANG"},{"manufacturerId":4187,"manufacturerName":"LLOYD"},{"manufacturerId":3679,"manufacturerName":"LOBINI"},{"manufacturerId":5550,"manufacturerName":"LOHIA"},{"manufacturerId":6822,"manufacturerName":"LORDSTOWN"},{"manufacturerId":5672,"manufacturerName":"LORINSER"},{"manufacturerId":802,"manufacturerName":"LOTUS"},{"manufacturerId":3661,"manufacturerName":"LOTUS (YOUNGMAN)"},{"manufacturerId":5422,"manufacturerName":"LOVSON"},{"manufacturerId":3047,"manufacturerName":"LTI"},{"manufacturerId":1515,"manufacturerName":"LUAZ"},{"manufacturerId":6519,"manufacturerName":"LUCID"},{"manufacturerId":7731,"manufacturerName":"LUXEED"},{"manufacturerId":3742,"manufacturerName":"LUXGEN"},{"manufacturerId":4612,"manufacturerName":"LYNK & CO"},{"manufacturerId":7029,"manufacturerName":"M-HERO"},{"manufacturerId":1280,"manufacturerName":"MAHINDRA"},{"manufacturerId":3554,"manufacturerName":"MAHINDRA RENAULT"},{"manufacturerId":69,"manufacturerName":"MAN"},{"manufacturerId":5696,"manufacturerName":"MAPLE"},{"manufacturerId":2905,"manufacturerName":"MAPLE (SMA)"},{"manufacturerId":1516,"manufacturerName":"MARCOS"},{"manufacturerId":5170,"manufacturerName":"MARTIN MOTORS"},{"manufacturerId":908,"manufacturerName":"MARUTI"},{"manufacturerId":3549,"manufacturerName":"MARUTI SUZUKI"},{"manufacturerId":771,"manufacturerName":"MASERATI"},{"manufacturerId":3794,"manufacturerName":"MASTRETTA"},{"manufacturerId":3300,"manufacturerName":"MAXUS"},{"manufacturerId":2164,"manufacturerName":"MAYBACH"},{"manufacturerId":72,"manufacturerName":"MAZDA"},{"manufacturerId":3532,"manufacturerName":"MAZDA (CHANGAN)"},{"manufacturerId":3138,"manufacturerName":"MAZDA (FAW)"},{"manufacturerId":1518,"manufacturerName":"MCLAREN"},{"manufacturerId":845,"manufacturerName":"MEGA"},{"manufacturerId":74,"manufacturerName":"MERCEDES-BENZ"},{"manufacturerId":3645,"manufacturerName":"MERCEDES-BENZ (BBDC)"},{"manufacturerId":3522,"manufacturerName":"MERCEDES-BENZ (FJDA)"},{"manufacturerId":161,"manufacturerName":"MERCURY"},{"manufacturerId":2711,"manufacturerName":"MERKUR"},{"manufacturerId":1520,"manufacturerName":"METROCAB"},{"manufacturerId":75,"manufacturerName":"MG"},{"manufacturerId":3133,"manufacturerName":"MG (NANJING)"},{"manufacturerId":3838,"manufacturerName":"MG (SAIC)"},{"manufacturerId":3961,"manufacturerName":"MIA ELECTRIC"},{"manufacturerId":6545,"manufacturerName":"MICRO"},{"manufacturerId":4219,"manufacturerName":"MICROCAR"},{"manufacturerId":1521,"manufacturerName":"MIDDLEBRIDGE"},{"manufacturerId":8235,"manufacturerName":"MINAN AUTO"},{"manufacturerId":1522,"manufacturerName":"MINELLI"},{"manufacturerId":1523,"manufacturerName":"MINI"},{"manufacturerId":5257,"manufacturerName":"MINICORD"},{"manufacturerId":77,"manufacturerName":"MITSUBISHI"},{"manufacturerId":3650,"manufacturerName":"MITSUBISHI (BJC)"},{"manufacturerId":3837,"manufacturerName":"MITSUBISHI (GAC)"},{"manufacturerId":3658,"manufacturerName":"MITSUBISHI (SOUEAST)"},{"manufacturerId":2904,"manufacturerName":"MITSUOKA"},{"manufacturerId":2254,"manufacturerName":"MIURA"},{"manufacturerId":4501,"manufacturerName":"MOBILITY VENTURES"},{"manufacturerId":8369,"manufacturerName":"MOBILIZE"},{"manufacturerId":6378,"manufacturerName":"MODERN AUTO"},{"manufacturerId":803,"manufacturerName":"MORGAN"},{"manufacturerId":78,"manufacturerName":"MORRIS"},{"manufacturerId":813,"manufacturerName":"MOSKVICH"},{"manufacturerId":5204,"manufacturerName":"MPM MOTORS"},{"manufacturerId":8065,"manufacturerName":"MULLEN"},{"manufacturerId":4605,"manufacturerName":"MULTIX"},{"manufacturerId":670,"manufacturerName":"MWM"},{"manufacturerId":3132,"manufacturerName":"NAC IVECO (NAVECO)"},{"manufacturerId":7099,"manufacturerName":"NAMMI"},{"manufacturerId":3070,"manufacturerName":"NAZA"},{"manufacturerId":7098,"manufacturerName":"NEOMOR"},{"manufacturerId":5156,"manufacturerName":"NETA (HOZON)"},{"manufacturerId":5525,"manufacturerName":"NEW BAOJUN"},{"manufacturerId":6543,"manufacturerName":"NEW GONOW AUTO"},{"manufacturerId":6773,"manufacturerName":"NEXTEM"},{"manufacturerId":4780,"manufacturerName":"NIO"},{"manufacturerId":80,"manufacturerName":"NISSAN"},{"manufacturerId":3141,"manufacturerName":"NISSAN (DFAC)"},{"manufacturerId":2910,"manufacturerName":"NISSAN (ZHENGZHOU)"},{"manufacturerId":3625,"manufacturerName":"NOBLE"},{"manufacturerId":81,"manufacturerName":"NSU"},{"manufacturerId":7289,"manufacturerName":"OHM"},{"manufacturerId":1141,"manufacturerName":"OLDSMOBILE"},{"manufacturerId":1527,"manufacturerName":"OLTCIT"},{"manufacturerId":7642,"manufacturerName":"OMODA"},{"manufacturerId":8236,"manufacturerName":"ONVO"},{"manufacturerId":84,"manufacturerName":"OPEL"},{"manufacturerId":5123,"manufacturerName":"ORA"},{"manufacturerId":1529,"manufacturerName":"OSCA"},{"manufacturerId":5115,"manufacturerName":"OSHAN"},{"manufacturerId":5203,"manufacturerName":"OULLIM"},{"manufacturerId":2806,"manufacturerName":"PACKARD"},{"manufacturerId":4164,"manufacturerName":"PAGANI"},{"manufacturerId":1530,"manufacturerName":"PANOZ"},{"manufacturerId":1531,"manufacturerName":"PANTHER"},{"manufacturerId":1533,"manufacturerName":"PERODUA"},{"manufacturerId":88,"manufacturerName":"PEUGEOT"},{"manufacturerId":3531,"manufacturerName":"PEUGEOT (DF-PSA)"},{"manufacturerId":4659,"manufacturerName":"PGO"},{"manufacturerId":181,"manufacturerName":"PIAGGIO"},{"manufacturerId":3046,"manufacturerName":"PININFARINA"},{"manufacturerId":850,"manufacturerName":"PLYMOUTH"},{"manufacturerId":6146,"manufacturerName":"POCCO"},{"manufacturerId":5152,"manufacturerName":"POLARIS"},{"manufacturerId":3154,"manufacturerName":"POLARSUN"},{"manufacturerId":4817,"manufacturerName":"POLESTAR"},{"manufacturerId":7023,"manufacturerName":"POLESTONES"},{"manufacturerId":774,"manufacturerName":"PONTIAC"},{"manufacturerId":92,"manufacturerName":"PORSCHE"},{"manufacturerId":851,"manufacturerName":"PREMIER"},{"manufacturerId":778,"manufacturerName":"PROTON"},{"manufacturerId":1580,"manufacturerName":"PUCH"},{"manufacturerId":880,"manufacturerName":"PUMA"},{"manufacturerId":3740,"manufacturerName":"PYEONGHWA (PMC)"},{"manufacturerId":5138,"manufacturerName":"QIANTU"},{"manufacturerId":7094,"manufacturerName":"QIYUAN"},{"manufacturerId":3839,"manufacturerName":"QOROS"},{"manufacturerId":2712,"manufacturerName":"QVALE"},{"manufacturerId":6067,"manufacturerName":"R AUTO"},{"manufacturerId":6710,"manufacturerName":"RADAR"},{"manufacturerId":3689,"manufacturerName":"RAM"},{"manufacturerId":2808,"manufacturerName":"RAMBLER"},{"manufacturerId":1534,"manufacturerName":"RANGER"},{"manufacturerId":5426,"manufacturerName":"RASANDIK"},{"manufacturerId":4660,"manufacturerName":"RAVON"},{"manufacturerId":1536,"manufacturerName":"RAYTON FISSORE"},{"manufacturerId":5766,"manufacturerName":"RCEV"},{"manufacturerId":7095,"manufacturerName":"REACH"},{"manufacturerId":5124,"manufacturerName":"RED STAR"},{"manufacturerId":6057,"manufacturerName":"REFINE"},{"manufacturerId":773,"manufacturerName":"RELIANT"},{"manufacturerId":3284,"manufacturerName":"RELY"},{"manufacturerId":93,"manufacturerName":"RENAULT"},{"manufacturerId":4538,"manufacturerName":"RENAULT (DFAC)"},{"manufacturerId":694,"manufacturerName":"RENAULT TRUCKS"},{"manufacturerId":3555,"manufacturerName":"REVA"},{"manufacturerId":3285,"manufacturerName":"RIICH"},{"manufacturerId":1539,"manufacturerName":"RILEY"},{"manufacturerId":6915,"manufacturerName":"RIVIAN"},{"manufacturerId":3202,"manufacturerName":"ROEWE (SAIC)"},{"manufacturerId":705,"manufacturerName":"ROLLS-ROYCE"},{"manufacturerId":4708,"manufacturerName":"ROMANITAL"},{"manufacturerId":95,"manufacturerName":"ROVER"},{"manufacturerId":4152,"manufacturerName":"RUF"},{"manufacturerId":8237,"manufacturerName":"S-HIACE"},{"manufacturerId":99,"manufacturerName":"SAAB"},{"manufacturerId":4592,"manufacturerName":"SAIPA"},{"manufacturerId":2713,"manufacturerName":"SALEEN"},{"manufacturerId":4260,"manufacturerName":"SAMSUNG"},{"manufacturerId":1544,"manufacturerName":"SAN"},{"manufacturerId":8155,"manufacturerName":"SANTA MATILDE"},{"manufacturerId":171,"manufacturerName":"SANTANA"},{"manufacturerId":1545,"manufacturerName":"SAO"},{"manufacturerId":1497,"manufacturerName":"SATURN"},{"manufacturerId":2714,"manufacturerName":"SCION"},{"manufacturerId":6696,"manufacturerName":"SCOOBIC"},{"manufacturerId":5416,"manufacturerName":"SCOOTERS INDIA"},{"manufacturerId":5813,"manufacturerName":"SD"},{"manufacturerId":104,"manufacturerName":"SEAT"},{"manufacturerId":4763,"manufacturerName":"SEAZ"},{"manufacturerId":5590,"manufacturerName":"SERES"},{"manufacturerId":6178,"manufacturerName":"SEVIC"},{"manufacturerId":1547,"manufacturerName":"SHELBY"},{"manufacturerId":4661,"manufacturerName":"SHINERAY"},{"manufacturerId":3156,"manufacturerName":"SHUANGHUAN"},{"manufacturerId":4537,"manufacturerName":"SIAM"},{"manufacturerId":8327,"manufacturerName":"SILENCE"},{"manufacturerId":4731,"manufacturerName":"SINGER"},{"manufacturerId":5125,"manufacturerName":"SINOGOLD"},{"manufacturerId":3855,"manufacturerName":"SINOTRUK (CNHTC)"},{"manufacturerId":1548,"manufacturerName":"SIPANI"},{"manufacturerId":5139,"manufacturerName":"SITECH"},{"manufacturerId":106,"manufacturerName":"SKODA"},{"manufacturerId":3530,"manufacturerName":"SKODA (SVW)"},{"manufacturerId":5890,"manufacturerName":"SKYWELL"},{"manufacturerId":5259,"manufacturerName":"SKYWELL (KAIWO)"},{"manufacturerId":6176,"manufacturerName":"SKYWORTH"},{"manufacturerId":1138,"manufacturerName":"SMART"},{"manufacturerId":5595,"manufacturerName":"SOL"},{"manufacturerId":3657,"manufacturerName":"SOUEAST"},{"manufacturerId":3153,"manufacturerName":"SOYAT"},{"manufacturerId":5171,"manufacturerName":"SPANIA GTA"},{"manufacturerId":1549,"manufacturerName":"SPECTRE"},{"manufacturerId":4627,"manufacturerName":"SPERANZA"},{"manufacturerId":6874,"manufacturerName":"SPORTEQUIPE"},{"manufacturerId":2755,"manufacturerName":"SPYKER"},{"manufacturerId":5262,"manufacturerName":"SRM (BRILLIANCE)"},{"manufacturerId":4010,"manufacturerName":"SRT"},{"manufacturerId":175,"manufacturerName":"SSANGYONG"},{"manufacturerId":1550,"manufacturerName":"STANDARD AUTOMOBILE"},{"manufacturerId":2810,"manufacturerName":"STANGUELLINI"},{"manufacturerId":8238,"manufacturerName":"STELATO"},{"manufacturerId":1540,"manufacturerName":"STERLING"},{"manufacturerId":176,"manufacturerName":"STEYR"},{"manufacturerId":4015,"manufacturerName":"STREETSCOOTER"},{"manufacturerId":2715,"manufacturerName":"STUDEBAKER"},{"manufacturerId":107,"manufacturerName":"SUBARU"},{"manufacturerId":2716,"manufacturerName":"SUNBEAM"},{"manufacturerId":109,"manufacturerName":"SUZUKI"},{"manufacturerId":3143,"manufacturerName":"SUZUKI (CHANGAN)"},{"manufacturerId":3199,"manufacturerName":"SUZUKI (CHANGHE)"},{"manufacturerId":4611,"manufacturerName":"SWM MOTORS"},{"manufacturerId":5999,"manufacturerName":"T-KING"},{"manufacturerId":3680,"manufacturerName":"TAC"},{"manufacturerId":4292,"manufacturerName":"TAGAZ"},{"manufacturerId":110,"manufacturerName":"TALBOT"},{"manufacturerId":6233,"manufacturerName":"TANK"},{"manufacturerId":178,"manufacturerName":"TATA"},{"manufacturerId":3443,"manufacturerName":"TAZZARI"},{"manufacturerId":6175,"manufacturerName":"TD Cars"},{"manufacturerId":5330,"manufacturerName":"TECHART"},{"manufacturerId":5425,"manufacturerName":"TEJA"},{"manufacturerId":3328,"manufacturerName":"TESLA"},{"manufacturerId":7025,"manufacturerName":"THACO"},{"manufacturerId":4644,"manufacturerName":"THAIRUNG"},{"manufacturerId":3514,"manufacturerName":"THINK"},{"manufacturerId":3048,"manufacturerName":"TIANMA"},{"manufacturerId":3157,"manufacturerName":"TIANQI MEIYA"},{"manufacturerId":6119,"manufacturerName":"TIMOR"},{"manufacturerId":1551,"manufacturerName":"TOFAS"},{"manufacturerId":5558,"manufacturerName":"TOGG"},{"manufacturerId":4449,"manufacturerName":"TONGBAO"},{"manufacturerId":4448,"manufacturerName":"TONGJIAFU"},{"manufacturerId":2913,"manufacturerName":"TONGTIAN"},{"manufacturerId":111,"manufacturerName":"TOYOTA"},{"manufacturerId":3137,"manufacturerName":"TOYOTA (FAW)"},{"manufacturerId":3130,"manufacturerName":"TOYOTA (GAC)"},{"manufacturerId":187,"manufacturerName":"TRABANT"},{"manufacturerId":4798,"manufacturerName":"TRAUM"},{"manufacturerId":112,"manufacturerName":"TRIUMPH"},{"manufacturerId":3681,"manufacturerName":"TROLLER"},{"manufacturerId":6439,"manufacturerName":"TROPOS"},{"manufacturerId":861,"manufacturerName":"TVR"},{"manufacturerId":4554,"manufacturerName":"TVS"},{"manufacturerId":1553,"manufacturerName":"UAZ"},{"manufacturerId":3159,"manufacturerName":"UFO"},{"manufacturerId":1554,"manufacturerName":"UMM"},{"manufacturerId":4762,"manufacturerName":"UZ-DAEWOO"},{"manufacturerId":4310,"manufacturerName":"VAM"},{"manufacturerId":117,"manufacturerName":"VAUXHALL"},{"manufacturerId":1555,"manufacturerName":"VECTOR"},{"manufacturerId":4646,"manufacturerName":"VEM"},{"manufacturerId":4636,"manufacturerName":"VENIRAUTO"},{"manufacturerId":1556,"manufacturerName":"VENTURI"},{"manufacturerId":3799,"manufacturerName":"VENUCIA"},{"manufacturerId":5506,"manufacturerName":"VGV"},{"manufacturerId":6768,"manufacturerName":"VIAUTO"},{"manufacturerId":4256,"manufacturerName":"VICTORY"},{"manufacturerId":5118,"manufacturerName":"VINFAST"},{"manufacturerId":2144,"manufacturerName":"VM"},{"manufacturerId":7274,"manufacturerName":"VOLT"},{"manufacturerId":120,"manufacturerName":"VOLVO"},{"manufacturerId":3533,"manufacturerName":"VOLVO (CHANGAN)"},{"manufacturerId":4167,"manufacturerName":"VOLVO ASIA"},{"manufacturerId":5111,"manufacturerName":"VORTEX"},{"manufacturerId":6223,"manufacturerName":"VOYAH"},{"manufacturerId":3752,"manufacturerName":"VPG"},{"manufacturerId":4607,"manufacturerName":"VUHL"},{"manufacturerId":121,"manufacturerName":"VW"},{"manufacturerId":8223,"manufacturerName":"VW (ANHUI)"},{"manufacturerId":2859,"manufacturerName":"VW (FAW)"},{"manufacturerId":3035,"manufacturerName":"VW (SVW)"},{"manufacturerId":8166,"manufacturerName":"WALLYS"},{"manufacturerId":3191,"manufacturerName":"WANFENG"},{"manufacturerId":6624,"manufacturerName":"WANXIANG AUTO"},{"manufacturerId":186,"manufacturerName":"WARTBURG"},{"manufacturerId":5114,"manufacturerName":"WELTMEISTER"},{"manufacturerId":907,"manufacturerName":"WESTFIELD"},{"manufacturerId":4751,"manufacturerName":"WEY"},{"manufacturerId":1558,"manufacturerName":"WIESMANN"},{"manufacturerId":2815,"manufacturerName":"WILLYS"},{"manufacturerId":8239,"manufacturerName":"WINNERWAY"},{"manufacturerId":1541,"manufacturerName":"WOLSELEY"},{"manufacturerId":3696,"manufacturerName":"WORKHORSE"},{"manufacturerId":2874,"manufacturerName":"WULING"},{"manufacturerId":3140,"manufacturerName":"WULING (SGMW)"},{"manufacturerId":6398,"manufacturerName":"XBUS"},{"manufacturerId":8161,"manufacturerName":"XCITE"},{"manufacturerId":6588,"manufacturerName":"XEV"},{"manufacturerId":8048,"manufacturerName":"XIAOMI"},{"manufacturerId":3186,"manufacturerName":"XINKAI"},{"manufacturerId":5184,"manufacturerName":"XPENG"},{"manufacturerId":7089,"manufacturerName":"YANGWANG"},{"manufacturerId":4002,"manufacturerName":"YEMA"},{"manufacturerId":7732,"manufacturerName":"YUANHANG"},{"manufacturerId":4764,"manufacturerName":"YUDO"},{"manufacturerId":3193,"manufacturerName":"YUEJIN"},{"manufacturerId":2816,"manufacturerName":"YUGO"},{"manufacturerId":1559,"manufacturerName":"YULON"},{"manufacturerId":5188,"manufacturerName":"YULU"},{"manufacturerId":6207,"manufacturerName":"ZACUA"},{"manufacturerId":4740,"manufacturerName":"ZAMYAD"},{"manufacturerId":4623,"manufacturerName":"ZANELLA"},{"manufacturerId":4788,"manufacturerName":"ZAROOQ"},{"manufacturerId":124,"manufacturerName":"ZASTAVA"},{"manufacturerId":1139,"manufacturerName":"ZAZ"},{"manufacturerId":4599,"manufacturerName":"ZD"},{"manufacturerId":5258,"manufacturerName":"ZEDRIV"},{"manufacturerId":6168,"manufacturerName":"ZEEKR"},{"manufacturerId":4604,"manufacturerName":"ZENOS CARS"},{"manufacturerId":2736,"manufacturerName":"ZHONGHUA (BRILLIANCE)"},{"manufacturerId":2911,"manufacturerName":"ZHONGXING (ZX AUTO)"},{"manufacturerId":2932,"manufacturerName":"ZIL"},{"manufacturerId":4033,"manufacturerName":"ZINORO"},{"manufacturerId":3160,"manufacturerName":"ZOTYE"},{"manufacturerId":678,"manufacturerName":"ZUENDAPP"},{"manufacturerId":5841,"manufacturerName":"ACE"},{"manufacturerId":1,"manufacturerName":"AEBI"},{"manufacturerId":1033,"manufacturerName":"AGCO"},{"manufacturerId":4391,"manufacturerName":"AGCO ALLIS"},{"manufacturerId":5842,"manufacturerName":"AGRI KING"},{"manufacturerId":5843,"manufacturerName":"AKASH"},{"manufacturerId":3974,"manufacturerName":"AL-GHAZI"},{"manufacturerId":5440,"manufacturerName":"ALEXANDER DENNIS"},{"manufacturerId":3687,"manufacturerName":"ALLGAIER"},{"manufacturerId":4489,"manufacturerName":"AMW"},{"manufacturerId":3829,"manufacturerName":"ARMATRAC"},{"manufacturerId":131,"manufacturerName":"ASTRA"},{"manufacturerId":2162,"manufacturerName":"AYATS"},{"manufacturerId":3960,"manufacturerName":"BASAK"},{"manufacturerId":1039,"manufacturerName":"BAUTZ"},{"manufacturerId":5441,"manufacturerName":"BCI"},{"manufacturerId":1040,"manufacturerName":"BCS"},{"manufacturerId":4004,"manufacturerName":"BEIBEN"},{"manufacturerId":3915,"manufacturerName":"BELARUS"},{"manufacturerId":865,"manufacturerName":"BERKHOF"},{"manufacturerId":3729,"manufacturerName":"BHARATBENZ"},{"manufacturerId":3830,"manufacturerName":"BM TRACTORS"},{"manufacturerId":137,"manufacturerName":"BOVA"},{"manufacturerId":3831,"manufacturerName":"BRANSON"},{"manufacturerId":2395,"manufacturerName":"BREDAMENARINIBUS"},{"manufacturerId":3688,"manufacturerName":"BUCHER"},{"manufacturerId":5568,"manufacturerName":"BYD ADL"},{"manufacturerId":4394,"manufacturerName":"C&C TRUCKS"},{"manufacturerId":2758,"manufacturerName":"CAMC"},{"manufacturerId":5844,"manufacturerName":"CAPTAIN"},{"manufacturerId":3822,"manufacturerName":"CARON"},{"manufacturerId":1048,"manufacturerName":"CARRARO"},{"manufacturerId":661,"manufacturerName":"CASE IH"},{"manufacturerId":937,"manufacturerName":"CATERPILLAR"},{"manufacturerId":3823,"manufacturerName":"CHALLENGER"},{"manufacturerId":3038,"manufacturerName":"CHENGLONG"},{"manufacturerId":750,"manufacturerName":"CLAAS"},{"manufacturerId":5463,"manufacturerName":"CORONA"},{"manufacturerId":140,"manufacturerName":"DENNIS"},{"manufacturerId":751,"manufacturerName":"DEUTZ-FAHR"},{"manufacturerId":2208,"manufacturerName":"DINA"},{"manufacturerId":5527,"manufacturerName":"DONGFENG CHAOLONG"},{"manufacturerId":30,"manufacturerName":"DRÖGMÖLLER"},{"manufacturerId":3828,"manufacturerName":"DURSO"},{"manufacturerId":1057,"manufacturerName":"EICHER"},{"manufacturerId":4639,"manufacturerName":"EL DETALLE"},{"manufacturerId":143,"manufacturerName":"ERF"},{"manufacturerId":5845,"manufacturerName":"ESCORTS"},{"manufacturerId":1060,"manufacturerName":"FAHR"},{"manufacturerId":2924,"manufacturerName":"FAP"},{"manufacturerId":3946,"manufacturerName":"FARMTRAC"},{"manufacturerId":752,"manufacturerName":"FENDT"},{"manufacturerId":3821,"manufacturerName":"FERRARI AGRI"},{"manufacturerId":5846,"manufacturerName":"FIELD MARSHAL"},{"manufacturerId":4739,"manufacturerName":"FNM"},{"manufacturerId":829,"manufacturerName":"FODEN TRUCKS"},{"manufacturerId":3741,"manufacturerName":"FUSO (MITSUBISHI)"},{"manufacturerId":832,"manufacturerName":"GINAF"},{"manufacturerId":1063,"manufacturerName":"GOLDONI"},{"manufacturerId":3500,"manufacturerName":"GRUAU"},{"manufacturerId":1025,"manufacturerName":"GUELDNER"},{"manufacturerId":4608,"manufacturerName":"GÜLERYÜZ"},{"manufacturerId":4692,"manufacturerName":"HATTAT"},{"manufacturerId":150,"manufacturerName":"HEULIEZ"},{"manufacturerId":4773,"manufacturerName":"HICOM"},{"manufacturerId":151,"manufacturerName":"HINO"},{"manufacturerId":5392,"manufacturerName":"HINO (GAC)"},{"manufacturerId":5849,"manufacturerName":"HMT"},{"manufacturerId":6620,"manufacturerName":"HOA MAI"},{"manufacturerId":4542,"manufacturerName":"INBUS"},{"manufacturerId":5848,"manufacturerName":"INDO FARM"},{"manufacturerId":53,"manufacturerName":"INTERNATIONAL HARV."},{"manufacturerId":2115,"manufacturerName":"IRISBUS"},{"manufacturerId":2927,"manufacturerName":"IRIZAR"},{"manufacturerId":5464,"manufacturerName":"JBM"},{"manufacturerId":837,"manufacturerName":"JCB"},{"manufacturerId":755,"manufacturerName":"JOHN DEERE"},{"manufacturerId":2453,"manufacturerName":"KAMAZ"},{"manufacturerId":5850,"manufacturerName":"KAMCO"},{"manufacturerId":153,"manufacturerName":"KAROSA"},{"manufacturerId":4182,"manufacturerName":"KAVZ"},{"manufacturerId":155,"manufacturerName":"KENWORTH"},{"manufacturerId":5710,"manufacturerName":"KING"},{"manufacturerId":3833,"manufacturerName":"KIOTI"},{"manufacturerId":976,"manufacturerName":"KRAMER"},{"manufacturerId":977,"manufacturerName":"KUBOTA"},{"manufacturerId":979,"manufacturerName":"LANDINI"},{"manufacturerId":3804,"manufacturerName":"LAZ"},{"manufacturerId":65,"manufacturerName":"LEYLAND"},{"manufacturerId":4186,"manufacturerName":"LIAZ BUS"},{"manufacturerId":67,"manufacturerName":"MACK"},{"manufacturerId":68,"manufacturerName":"MAGIRUS-DEUTZ"},{"manufacturerId":5856,"manufacturerName":"MAHINDRA GUJARAT"},{"manufacturerId":2601,"manufacturerName":"MARBUS"},{"manufacturerId":5711,"manufacturerName":"MASA"},{"manufacturerId":669,"manufacturerName":"MASSEY FERGUSON"},{"manufacturerId":2245,"manufacturerName":"MAZ"},{"manufacturerId":3551,"manufacturerName":"MAZ-MAN"},{"manufacturerId":3914,"manufacturerName":"MCCORMICK"},{"manufacturerId":843,"manufacturerName":"MCW"},{"manufacturerId":6732,"manufacturerName":"MENARINIBUS"},{"manufacturerId":79,"manufacturerName":"MULTICAR"},{"manufacturerId":162,"manufacturerName":"NEOPLAN"},{"manufacturerId":2637,"manufacturerName":"NEW HOLLAND"},{"manufacturerId":126,"manufacturerName":"ÖAF"},{"manufacturerId":83,"manufacturerName":"OM"},{"manufacturerId":849,"manufacturerName":"OPTARE"},{"manufacturerId":2929,"manufacturerName":"OTOKAR"},{"manufacturerId":164,"manufacturerName":"PADANE"},{"manufacturerId":3820,"manufacturerName":"PASQUALI"},{"manufacturerId":2256,"manufacturerName":"PEGASO"},{"manufacturerId":4392,"manufacturerName":"PFANZELT"},{"manufacturerId":3282,"manufacturerName":"PLAXTON"},{"manufacturerId":3972,"manufacturerName":"PREET"},{"manufacturerId":5436,"manufacturerName":"ROSENBAUER"},{"manufacturerId":4280,"manufacturerName":"SAIC-IVECO HONGYAN"},{"manufacturerId":6708,"manufacturerName":"SAMCO"},{"manufacturerId":674,"manufacturerName":"SAME"},{"manufacturerId":6277,"manufacturerName":"SANY"},{"manufacturerId":103,"manufacturerName":"SCANIA"},{"manufacturerId":2488,"manufacturerName":"SETRA"},{"manufacturerId":3848,"manufacturerName":"SHAANXI"},{"manufacturerId":4273,"manufacturerName":"SHACMAN"},{"manufacturerId":8241,"manufacturerName":"SHACMOTO"},{"manufacturerId":4642,"manufacturerName":"SILEO"},{"manufacturerId":174,"manufacturerName":"SISU"},{"manufacturerId":4534,"manufacturerName":"SML"},{"manufacturerId":2931,"manufacturerName":"SOLARIS"},{"manufacturerId":3826,"manufacturerName":"SOLIS"},{"manufacturerId":3824,"manufacturerName":"SONALIKA"},{"manufacturerId":4532,"manufacturerName":"SPARTAN"},{"manufacturerId":5851,"manufacturerName":"STANDARD AGRI"},{"manufacturerId":6039,"manufacturerName":"STAR"},{"manufacturerId":2697,"manufacturerName":"STERLING TRUCKS"},{"manufacturerId":5480,"manufacturerName":"SUNLONG"},{"manufacturerId":3975,"manufacturerName":"SWARAJ"},{"manufacturerId":5704,"manufacturerName":"SWARAJ MAZDA"},{"manufacturerId":5852,"manufacturerName":"TAFE"},{"manufacturerId":179,"manufacturerName":"TATRA"},{"manufacturerId":4577,"manufacturerName":"TATSA"},{"manufacturerId":2667,"manufacturerName":"TEMSA"},{"manufacturerId":860,"manufacturerName":"TERBERG-BENSCHOP"},{"manufacturerId":6707,"manufacturerName":"TMT MOTORS"},{"manufacturerId":5847,"manufacturerName":"TRAKSTAR"},{"manufacturerId":5853,"manufacturerName":"TRISHUL"},{"manufacturerId":4421,"manufacturerName":"TROLIGA BUS"},{"manufacturerId":6706,"manufacturerName":"TRUONG GIANG"},{"manufacturerId":5206,"manufacturerName":"UD NISSAN DIESEL"},{"manufacturerId":3620,"manufacturerName":"UD TRUCKS"},{"manufacturerId":3763,"manufacturerName":"URAL"},{"manufacturerId":5465,"manufacturerName":"URAL INDIA"},{"manufacturerId":2671,"manufacturerName":"VALTRA"},{"manufacturerId":116,"manufacturerName":"VAN HOOL"},{"manufacturerId":3750,"manufacturerName":"VDL"},{"manufacturerId":6619,"manufacturerName":"VEAM"},{"manufacturerId":7275,"manufacturerName":"VINAMOTOR"},{"manufacturerId":3806,"manufacturerName":"VISEON"},{"manufacturerId":5735,"manufacturerName":"VOLVO BM"},{"manufacturerId":5854,"manufacturerName":"VST SHAKTI"},{"manufacturerId":3923,"manufacturerName":"WEITUO"},{"manufacturerId":182,"manufacturerName":"WESTERN STAR"},{"manufacturerId":5855,"manufacturerName":"WHITE WAGON"},{"manufacturerId":6812,"manufacturerName":"WRIGHT"},{"manufacturerId":4276,"manufacturerName":"XCMG"},{"manufacturerId":3819,"manufacturerName":"YAGMUR"},{"manufacturerId":4191,"manufacturerName":"YUTONG"},{"manufacturerId":1111,"manufacturerName":"ZETOR"},{"manufacturerId":5478,"manufacturerName":"ZHONGTONG"},{"manufacturerId":5063,"manufacturerName":"ADIVA"},{"manufacturerId":4330,"manufacturerName":"ADLY"},{"manufacturerId":4331,"manufacturerName":"AEON"},{"manufacturerId":6471,"manufacturerName":"AIMA"},{"manufacturerId":6699,"manufacturerName":"ALRENDO"},{"manufacturerId":4367,"manufacturerName":"AMAZONAS"},{"manufacturerId":5409,"manufacturerName":"AMPERE"},{"manufacturerId":2524,"manufacturerName":"APRILIA"},{"manufacturerId":4628,"manufacturerName":"ASIAWING"},{"manufacturerId":5064,"manufacturerName":"ATALA"},{"manufacturerId":5407,"manufacturerName":"ATHER"},{"manufacturerId":6491,"manufacturerName":"AUGURI"},{"manufacturerId":6480,"manufacturerName":"AVELLOZ"},{"manufacturerId":4423,"manufacturerName":"BAOTIAN"},{"manufacturerId":6478,"manufacturerName":"BEE"},{"manufacturerId":4402,"manufacturerName":"BEELINE"},{"manufacturerId":8333,"manufacturerName":"BENDA"},{"manufacturerId":2532,"manufacturerName":"BENELLI"},{"manufacturerId":6184,"manufacturerName":"BENLING"},{"manufacturerId":4801,"manufacturerName":"BENZHOU"},{"manufacturerId":4315,"manufacturerName":"BETA"},{"manufacturerId":4368,"manufacturerName":"BIMOTA"},{"manufacturerId":5127,"manufacturerName":"BRAAAP MOTORCYCLES"},{"manufacturerId":4239,"manufacturerName":"BRANDY"},{"manufacturerId":4540,"manufacturerName":"BRIXTON"},{"manufacturerId":5128,"manufacturerName":"BSA MOTORCYCLES"},{"manufacturerId":4048,"manufacturerName":"BUELL"},{"manufacturerId":6466,"manufacturerName":"BULL"},{"manufacturerId":2554,"manufacturerName":"CAGIVA"},{"manufacturerId":6476,"manufacturerName":"CAKE"},{"manufacturerId":4319,"manufacturerName":"CALOI"},{"manufacturerId":4617,"manufacturerName":"CCM"},{"manufacturerId":4487,"manufacturerName":"CEZETA"},{"manufacturerId":4424,"manufacturerName":"CF MOTO"},{"manufacturerId":5405,"manufacturerName":"CLEVELAND CYCLEWERKS"},{"manufacturerId":4803,"manufacturerName":"CPI"},{"manufacturerId":4052,"manufacturerName":"DAELIM"},{"manufacturerId":4240,"manufacturerName":"DAFRA"},{"manufacturerId":4369,"manufacturerName":"DAYANG"},{"manufacturerId":4071,"manufacturerName":"DERBI"},{"manufacturerId":2759,"manufacturerName":"DUCATI"},{"manufacturerId":6501,"manufacturerName":"E.F.O"},{"manufacturerId":4288,"manufacturerName":"ECM"},{"manufacturerId":4491,"manufacturerName":"EMCO"},{"manufacturerId":6705,"manufacturerName":"ENERGICA"},{"manufacturerId":5066,"manufacturerName":"ETON"},{"manufacturerId":4672,"manufacturerName":"EUROMOT"},{"manufacturerId":5412,"manufacturerName":"F.B MONDIAL"},{"manufacturerId":4072,"manufacturerName":"FANTIC"},{"manufacturerId":8179,"manufacturerName":"FORZA"},{"manufacturerId":5076,"manufacturerName":"GAC MOBYLETTE"},{"manufacturerId":4633,"manufacturerName":"GARELLI"},{"manufacturerId":4370,"manufacturerName":"GARINNI"},{"manufacturerId":4289,"manufacturerName":"GASGAS"},{"manufacturerId":4403,"manufacturerName":"GENERIC"},{"manufacturerId":4054,"manufacturerName":"GILERA"},{"manufacturerId":4539,"manufacturerName":"GOVECS"},{"manufacturerId":6904,"manufacturerName":"GPX MOTO"},{"manufacturerId":4371,"manufacturerName":"HAOBAO"},{"manufacturerId":6460,"manufacturerName":"HAOJUE"},{"manufacturerId":4668,"manufacturerName":"HAOSEN"},{"manufacturerId":4055,"manufacturerName":"HARLEY-DAVIDSON"},{"manufacturerId":4372,"manufacturerName":"HARTFORD"},{"manufacturerId":4087,"manufacturerName":"HERCULES"},{"manufacturerId":4553,"manufacturerName":"HERO"},{"manufacturerId":4556,"manufacturerName":"HERO ELECTRIC"},{"manufacturerId":4722,"manufacturerName":"HESKET"},{"manufacturerId":4314,"manufacturerName":"HMRacing"},{"manufacturerId":4488,"manufacturerName":"HOREX"},{"manufacturerId":6513,"manufacturerName":"HORWIN"},{"manufacturerId":5067,"manufacturerName":"HUATIAN"},{"manufacturerId":5129,"manufacturerName":"HUNTER MOTORCYCLES"},{"manufacturerId":4287,"manufacturerName":"HUSABERG"},{"manufacturerId":4241,"manufacturerName":"HUSQVARNA"},{"manufacturerId":4056,"manufacturerName":"HYOSUNG"},{"manufacturerId":4325,"manufacturerName":"INDIAN"},{"manufacturerId":4373,"manufacturerName":"IROS"},{"manufacturerId":4073,"manufacturerName":"ITALJET"},{"manufacturerId":4074,"manufacturerName":"JAWA"},{"manufacturerId":4673,"manufacturerName":"JIANSHE"},{"manufacturerId":4799,"manufacturerName":"JINLUN"},{"manufacturerId":8359,"manufacturerName":"JJ COBAS"},{"manufacturerId":4374,"manufacturerName":"JOHNNY PAG"},{"manufacturerId":4375,"manufacturerName":"KAHENA"},{"manufacturerId":4566,"manufacturerName":"KANDA"},{"manufacturerId":4242,"manufacturerName":"KASINSKI"},{"manufacturerId":1131,"manufacturerName":"KAWASAKI"},{"manufacturerId":6899,"manufacturerName":"KAYO"},{"manufacturerId":4495,"manufacturerName":"KEEWAY"},{"manufacturerId":5424,"manufacturerName":"KINETIC"},{"manufacturerId":8326,"manufacturerName":"KL"},{"manufacturerId":8358,"manufacturerName":"KOVE"},{"manufacturerId":4070,"manufacturerName":"KREIDLER"},{"manufacturerId":4498,"manufacturerName":"KSR MOTO"},{"manufacturerId":4472,"manufacturerName":"KUBA"},{"manufacturerId":2621,"manufacturerName":"KYMCO"},{"manufacturerId":5130,"manufacturerName":"LAMBRETTA"},{"manufacturerId":5131,"manufacturerName":"LARO"},{"manufacturerId":4075,"manufacturerName":"LAVERDA MOTORCYCLES"},{"manufacturerId":4559,"manufacturerName":"LECTRIC"},{"manufacturerId":8268,"manufacturerName":"LEONART"},{"manufacturerId":5068,"manufacturerName":"LEXMOTO"},{"manufacturerId":5069,"manufacturerName":"LINGBEN"},{"manufacturerId":6869,"manufacturerName":"LIVEWIRE"},{"manufacturerId":4231,"manufacturerName":"LML"},{"manufacturerId":4674,"manufacturerName":"LONCIN"},{"manufacturerId":4494,"manufacturerName":"LUXXON"},{"manufacturerId":4076,"manufacturerName":"MAICO"},{"manufacturerId":4060,"manufacturerName":"MALAGUTI"},{"manufacturerId":4492,"manufacturerName":"MASH"},{"manufacturerId":4061,"manufacturerName":"MBK"},{"manufacturerId":8337,"manufacturerName":"MBP MOTO"},{"manufacturerId":4618,"manufacturerName":"MEGELLI"},{"manufacturerId":4376,"manufacturerName":"MIZA"},{"manufacturerId":4333,"manufacturerName":"MONDIAL"},{"manufacturerId":4558,"manufacturerName":"MONTO"},{"manufacturerId":8338,"manufacturerName":"MORBIDELLI"},{"manufacturerId":6494,"manufacturerName":"MORMAII"},{"manufacturerId":4062,"manufacturerName":"MOTO GUZZI"},{"manufacturerId":4077,"manufacturerName":"MOTO-MORINI"},{"manufacturerId":4328,"manufacturerName":"MOTOBI"},{"manufacturerId":6459,"manufacturerName":"MOTORINO"},{"manufacturerId":4670,"manufacturerName":"MOTORRAD"},{"manufacturerId":4493,"manufacturerName":"MOTOWELL"},{"manufacturerId":6567,"manufacturerName":"MOTRON"},{"manufacturerId":6897,"manufacturerName":"MUTT"},{"manufacturerId":2761,"manufacturerName":"MV AGUSTA"},{"manufacturerId":4385,"manufacturerName":"MVK"},{"manufacturerId":4063,"manufacturerName":"MZ"},{"manufacturerId":8265,"manufacturerName":"NAXEON"},{"manufacturerId":4334,"manufacturerName":"NIPPONIA"},{"manufacturerId":4613,"manufacturerName":"NIU"},{"manufacturerId":4723,"manufacturerName":"NORTON"},{"manufacturerId":6203,"manufacturerName":"ODYSSE"},{"manufacturerId":5402,"manufacturerName":"OKINAWA"},{"manufacturerId":6350,"manufacturerName":"ONLINE"},{"manufacturerId":4078,"manufacturerName":"PGO MOTORCYCLES"},{"manufacturerId":6751,"manufacturerName":"PRAGA"},{"manufacturerId":8129,"manufacturerName":"PRIKE"},{"manufacturerId":6183,"manufacturerName":"PUR EV"},{"manufacturerId":4771,"manufacturerName":"QINGQI"},{"manufacturerId":6687,"manufacturerName":"QJMOTOR"},{"manufacturerId":8185,"manufacturerName":"QOODER"},{"manufacturerId":4346,"manufacturerName":"QUADRO"},{"manufacturerId":4377,"manufacturerName":"REGAL RAPTOR"},{"manufacturerId":5411,"manufacturerName":"REVOLT"},{"manufacturerId":4290,"manufacturerName":"REX"},{"manufacturerId":4621,"manufacturerName":"RIEJU"},{"manufacturerId":4404,"manufacturerName":"RIVERO"},{"manufacturerId":8340,"manufacturerName":"RIXE"},{"manufacturerId":6204,"manufacturerName":"ROWWET"},{"manufacturerId":7114,"manufacturerName":"ROYAL ALLOY"},{"manufacturerId":4386,"manufacturerName":"ROYAL ENFIELD"},{"manufacturerId":4064,"manufacturerName":"SACHS"},{"manufacturerId":5078,"manufacturerName":"SANBEN"},{"manufacturerId":4079,"manufacturerName":"SANGLAS"},{"manufacturerId":4624,"manufacturerName":"SCOMADI"},{"manufacturerId":4497,"manufacturerName":"SFM"},{"manufacturerId":5133,"manufacturerName":"SHERCO"},{"manufacturerId":4065,"manufacturerName":"SIMSON"},{"manufacturerId":675,"manufacturerName":"SOLO"},{"manufacturerId":4400,"manufacturerName":"SOMMER MOTORCYCLES"},{"manufacturerId":6470,"manufacturerName":"SOUSA"},{"manufacturerId":8093,"manufacturerName":"STARK FUTURE"},{"manufacturerId":4299,"manufacturerName":"SUNDOWN"},{"manufacturerId":6479,"manufacturerName":"SUPER SOCO"},{"manufacturerId":4407,"manufacturerName":"SWM"},{"manufacturerId":4245,"manufacturerName":"SYM"},{"manufacturerId":6906,"manufacturerName":"TALARIA"},{"manufacturerId":4401,"manufacturerName":"TGB"},{"manufacturerId":6690,"manufacturerName":"TINBOT"},{"manufacturerId":4675,"manufacturerName":"TMRACING"},{"manufacturerId":8168,"manufacturerName":"TNT"},{"manufacturerId":4425,"manufacturerName":"TOMOS"},{"manufacturerId":4080,"manufacturerName":"TORNAX"},{"manufacturerId":4244,"manufacturerName":"TRAXX"},{"manufacturerId":4496,"manufacturerName":"TURBHO"},{"manufacturerId":8309,"manufacturerName":"UBCO"},{"manufacturerId":4555,"manufacturerName":"UM"},{"manufacturerId":8295,"manufacturerName":"VELOCIFERO"},{"manufacturerId":7384,"manufacturerName":"VENT"},{"manufacturerId":4379,"manufacturerName":"VENTO"},{"manufacturerId":6798,"manufacturerName":"VERTIGO"},{"manufacturerId":4069,"manufacturerName":"VESPA"},{"manufacturerId":4324,"manufacturerName":"VICTORY MOTORCYCLES"},{"manufacturerId":5134,"manufacturerName":"VMOTO MOTORCYCLES"},{"manufacturerId":5733,"manufacturerName":"VOGE"},{"manufacturerId":6477,"manufacturerName":"VOLTZ"},{"manufacturerId":8307,"manufacturerName":"VOXAN"},{"manufacturerId":4323,"manufacturerName":"WANGYE"},{"manufacturerId":6493,"manufacturerName":"WAZN"},{"manufacturerId":8195,"manufacturerName":"WOTTAN MOTOR"},{"manufacturerId":4326,"manufacturerName":"WUYANG"},{"manufacturerId":4667,"manufacturerName":"XGJAO"},{"manufacturerId":5077,"manufacturerName":"XINGYUE"},{"manufacturerId":6688,"manufacturerName":"YADEA"},{"manufacturerId":1021,"manufacturerName":"YAMAHA"},{"manufacturerId":6909,"manufacturerName":"YCF"},{"manufacturerId":4564,"manufacturerName":"YEZDI"},{"manufacturerId":5065,"manufacturerName":"YIBEN"},{"manufacturerId":4560,"manufacturerName":"YObykes"},{"manufacturerId":8245,"manufacturerName":"ZEEHO"},{"manufacturerId":4322,"manufacturerName":"ZERO"},{"manufacturerId":4802,"manufacturerName":"ZNEN"},{"manufacturerId":5062,"manufacturerName":"ZONGSHEN"},{"manufacturerId":6502,"manufacturerName":"ZONTES"},{"manufacturerId":6910,"manufacturerName":"ZOOT"},{"manufacturerId":5709,"manufacturerName":"AAM"},{"manufacturerId":4455,"manufacturerName":"ADR"},{"manufacturerId":5763,"manufacturerName":"AXLE ALLIANCE"},{"manufacturerId":2570,"manufacturerName":"AXLETECH"},{"manufacturerId":885,"manufacturerName":"BPW"},{"manufacturerId":2483,"manufacturerName":"DANA"},{"manufacturerId":2482,"manufacturerName":"DETROIT DIESEL"},{"manufacturerId":5764,"manufacturerName":"DIRONA"},{"manufacturerId":894,"manufacturerName":"EATON"},{"manufacturerId":4160,"manufacturerName":"FONTENAX"},{"manufacturerId":37,"manufacturerName":"FRUEHAUF"},{"manufacturerId":5782,"manufacturerName":"FUWA K HITCH"},{"manufacturerId":4641,"manufacturerName":"GFA"},{"manufacturerId":2214,"manufacturerName":"GIGANT"},{"manufacturerId":2216,"manufacturerName":"HENDRICKSON"},{"manufacturerId":839,"manufacturerName":"KÖGEL"},{"manufacturerId":2218,"manufacturerName":"KRONE"},{"manufacturerId":2223,"manufacturerName":"MERITOR"},{"manufacturerId":855,"manufacturerName":"ROCKWELL"},{"manufacturerId":1640,"manufacturerName":"SAE-SMB"},{"manufacturerId":856,"manufacturerName":"SAF"},{"manufacturerId":2228,"manufacturerName":"SCHMITZ CARGOBULL"},{"manufacturerId":2484,"manufacturerName":"SMB"},{"manufacturerId":2497,"manufacturerName":"TRAILOR"},{"manufacturerId":3797,"manufacturerName":"VALX"},{"manufacturerId":2485,"manufacturerName":"YORK"},{"manufacturerId":3709,"manufacturerName":"ZF"}
+];
+
+const input = document.getElementById('mfr-input');
+const dropdown = document.getElementById('dropdown');
+const clearBtn = document.getElementById('clear-btn');
+const resultBox = document.getElementById('result-box');
+const resName = document.getElementById('res-name');
+const resId = document.getElementById('res-id');
+const submitBtn = document.getElementById('submit-btn');
+const countBadge = document.getElementById('count-badge');
+
+let selected = null;
+let activeIndex = -1;
+
+function highlight(text, query) {
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text;
+  return text.slice(0, idx) + '<mark>' + text.slice(idx, idx + query.length) + '</mark>' + text.slice(idx + query.length);
+}
+
+function showDropdown(query) {
+  const q = query.trim();
+  if (q.length === 0) { closeDropdown(); return; }
+
+  const matches = manufacturers.filter(m =>
+    m.manufacturerName.toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 50);
+
+  countBadge.textContent = matches.length > 0 ? `${matches.length} match${matches.length !== 1 ? 'es' : ''}` : '';
+
+  if (matches.length === 0) {
+    dropdown.innerHTML = `<div class="no-results">// no matches found</div>`;
+  } else {
+    dropdown.innerHTML = matches.map((m, i) => `
+      <div class="dropdown-item" data-index="${i}" data-id="${m.manufacturerId}" data-name="${m.manufacturerName}">
+        <span class="item-name">${highlight(m.manufacturerName, q)}</span>
+        <span class="item-id">#${m.manufacturerId}</span>
+      </div>
+    `).join('');
+
+    dropdown.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        selectItem(item.dataset.name, parseInt(item.dataset.id));
+      });
+    });
+  }
+
+  dropdown.style.display = 'block';
+  activeIndex = -1;
+}
+
+function closeDropdown() {
+  dropdown.style.display = 'none';
+  activeIndex = -1;
+}
+
+function selectItem(name, id) {
+  selected = { manufacturerName: name, manufacturerId: id };
+  input.value = name;
+  clearBtn.style.display = 'block';
+  closeDropdown();
+  countBadge.textContent = '';
+
+  resName.textContent = name;
+  resId.textContent = id;
+  resultBox.classList.add('visible');
+  submitBtn.classList.add('visible');
+}
+
+function clearSelection() {
+  selected = null;
+  input.value = '';
+  clearBtn.style.display = 'none';
+  resultBox.classList.remove('visible');
+  submitBtn.classList.remove('visible');
+  countBadge.textContent = '';
+  closeDropdown();
+  input.focus();
+}
+
+input.addEventListener('input', () => {
+  selected = null;
+  resultBox.classList.remove('visible');
+  submitBtn.classList.remove('visible');
+  clearBtn.style.display = input.value.length > 0 ? 'block' : 'none';
+  showDropdown(input.value);
+});
+
+input.addEventListener('keydown', (e) => {
+  const items = dropdown.querySelectorAll('.dropdown-item');
+  if (!items.length) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    activeIndex = Math.min(activeIndex + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('active', i === activeIndex));
+    items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    activeIndex = Math.max(activeIndex - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('active', i === activeIndex));
+    items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (activeIndex >= 0 && items[activeIndex]) {
+      const item = items[activeIndex];
+      selectItem(item.dataset.name, parseInt(item.dataset.id));
+    }
+  } else if (e.key === 'Escape') {
+    closeDropdown();
+  }
+});
+
+input.addEventListener('blur', () => setTimeout(closeDropdown, 150));
+clearBtn.addEventListener('click', clearSelection);
+
+submitBtn.addEventListener('click', async () => {
+  if (!selected) return;
+  
+  submitBtn.textContent = '⏳  SENDING...';
+  submitBtn.style.opacity = '0.6';
+  
+  const payload = {
+    manufacturerId: selected.manufacturerId,
+    manufacturerName: selected.manufacturerName,
+    timestamp: new Date().toISOString()
+  };
+  
+  try {
+    const response = await fetch('Manufacturer_Lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (response.ok) {
+      submitBtn.textContent = '✓  TRIGGERED';
+      setTimeout(() => {
+        submitBtn.textContent = '▶  TRIGGER WORKFLOW';
+        submitBtn.style.opacity = '1';
+      }, 2000);
+    } else {
+      throw new Error('Failed');
+    }
+  } catch (error) {
+    submitBtn.textContent = '✗  FAILED';
+    submitBtn.style.opacity = '1';
+    setTimeout(() => {
+      submitBtn.textContent = '▶  TRIGGER WORKFLOW';
+    }, 2000);
+  }
+});
+</script>
+</body>
+</html>
