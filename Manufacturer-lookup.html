@@ -449,7 +449,7 @@ submitBtn.addEventListener('click', async () => {
   };
   
   try {
-    const response = await fetch('Manufacturer_Lookup', {
+    const response = await fetch('https://aretech.app.n8n.cloud/webhook-test/manufacturer-lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -472,6 +472,18 @@ submitBtn.addEventListener('click', async () => {
     }, 2000);
   }
 });
+    } else {
+      throw new Error('Failed');
+    }
+  } catch (error) {
+    submitBtn.textContent = '✗  FAILED';
+    submitBtn.style.opacity = '1';
+    setTimeout(() => {
+      submitBtn.textContent = '▶  TRIGGER WORKFLOW';
+    }, 2000);
+  }
+});
 </script>
 </body>
+
 </html>
