@@ -19,7 +19,9 @@
     --mono: 'Share Tech Mono', monospace;
     --sans: 'Barlow', sans-serif;
   }
-
+</style>
+<script src="manufacturers-data.js"></script>
+</head>
   body {
     background: var(--bg);
     color: var(--text);
@@ -423,9 +425,7 @@ async function init() {
 
 // Load hardcoded manufacturers
 async function loadManufacturers() {
-  state.manufacturers = [
-    {manufacturerId:36,manufacturerName:"FORD"},{manufacturerId:45,manufacturerName:"HONDA"},{manufacturerId:183,manufacturerName:"HYUNDAI"},{manufacturerId:184,manufacturerName:"KIA"},{manufacturerId:80,manufacturerName:"NISSAN"},{manufacturerId:111,manufacturerName:"TOYOTA"},{manufacturerId:16,manufacturerName:"BMW"},{manufacturerId:74,manufacturerName:"MERCEDES-BENZ"},{manufacturerId:5,manufacturerName:"AUDI"},{manufacturerId:121,manufacturerName:"VW"}
-  ];
+  state.manufacturers = MANUFACTURERS; // use the data from manufacturers-data.js
 }
 
 // Step 1: Manufacturer Search
